@@ -1,15 +1,17 @@
 === Quick build ===
 
-wget http://bullet.googlecode.com/files/bullet-2.80-rev2531.zip
-unzip bullet-2.80-rev2531.zip
-cd bullet-2.80-rev2531
-cmake . -G "Unix Makefiles"
-sed -i -e 's/CMAKE_CXX_FLAGS:STRING=/\0-fPIC /' CMakeCache.txt
-sed -i -e "s#/usr/local#$PWD/install#" CMakeCache.txt
+wget https://github.com/bulletphysics/bullet3/archive/2.83.5.zip
+unzip 2.83.5.zip
+cd bullet3-2.83.5
+mkdir build
+cd build
+cmake .. -G "Unix Makefiles" -DINSTALL_LIBS=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX:PATH=/usr/local/install
+make -j 4
 make install
-cd ..
+cd ../..
 
-python setup.py build_ext --include-dirs ./bullet-2.80-rev2531/install/include/bullet --library-dirs ./bullet-2.80-rev2531/install/lib
+cd pybullet
+python setup.py build_ext --include-dirs /usr/local/install/include/bullet --library-dirs /usr/local/install/lib
 
 The only file you need is bullet.so (e.g. build/lib.linux-x86_64-2.7/bullet/bullet.so) which should be copied to
 the game's lib dir.
