@@ -197,6 +197,7 @@ cdef extern from "btBulletDynamicsCommon.h":
 
         int getActivationState()
         void setActivationState(int newState)
+        void activate()
 
         int getCollisionFlags()
         void setCollisionFlags(int flags)
@@ -451,6 +452,7 @@ cdef extern from "btBulletCollisionCommon.h":
 
         btMotionState* getMotionState()
 
+        void setGravity(btVector3 gravity)
         void setAngularFactor(btScalar angFac)
         btScalar getAngularDamping()
         btScalar getAngularSleepingThreshold()
@@ -1734,6 +1736,9 @@ cdef class CollisionObject:
         """
         self.thisptr.setActivationState(newState)
 
+    def activate(self):
+        self.thisptr.activate()
+
     def getCollisionFlags(self):
         return self.thisptr.getCollisionFlags()
 
@@ -2088,6 +2093,11 @@ cdef class RigidBody(CollisionObject):
         cdef btVector3 impulse = btVector3(i.x, i.y, i.z)
         body.applyCentralImpulse(impulse)
 
+    def setGravity(self, Vector3 i not None):
+        """Set gravity for this RigidBody. """
+        cdef btRigidBody* body = <btRigidBody*>self.thisptr
+        cdef btVector3 gravity = btVector3(i.x, i.y, i.z)
+        body.setGravity(gravity)
 
     def applyImpulse(self, Vector3 i not None, Vector3 relativePosition not None):
         """
