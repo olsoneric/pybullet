@@ -207,6 +207,10 @@ cdef extern from "btBulletDynamicsCommon.h":
     cdef int _CF_NO_CONTACT_RESPONSE "btCollisionObject::CF_NO_CONTACT_RESPONSE"
     cdef int _CF_CUSTOM_MATERIAL_CALLBACK "btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK"
 
+    cdef cppclass btCollisionObjectWrapper:
+        btCollisionObjectWrapper()
+        btCollisionObject* getCollisionObject()
+
 
     cdef cppclass btRigidBody(btCollisionObject)
 
@@ -807,9 +811,17 @@ cdef extern from "BulletCollision/NarrowPhaseCollision/btManifoldPoint.h":
     cdef cppclass btManifoldPoint:
         pass
 
+cdef extern from "BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h":
+
+    cdef cppclass const_btCollisionObjectWrapper:
+        # const_btCollisionObjectWrapper()
+        btCollisionObject & getCollisionObject()
+
+    ctypedef btCollisionObjectWrapper const_btCollisionObjectWrapper "const btCollisionObjectWrapper"
+
 cdef extern from "BulletCollision/CollisionDispatch/btManifoldResult.h":
-    ctypedef btCollisionObject const_btCollisionObject "const btCollisionObject"
-    cdef bool (*gContactAddedCallback)(btManifoldPoint &cp, const_btCollisionObject *colObj0, int partId0, int index0, const_btCollisionObject *colObj1, int partId1, int index1)
+    cdef bool (*gContactAddedCallback)(btManifoldPoint &cp, const_btCollisionObjectWrapper *colObjWrap0, int partId0, int index0, const_btCollisionObjectWrapper *colObjWrap1, int partId1, int index1)
+
 
 
 # Forward declare some things because of circularity in the API.
@@ -3792,7 +3804,9 @@ cdef class RotationalLimitMotor:
             self.thisptr.m_accumulatedImpulse = value                                                
 
 
-cdef bool ContactCallback(btManifoldPoint &cp, const_btCollisionObject *colObj0, int partId0, int index0, const_btCollisionObject *colObj1, int partId1, int index1):
+cdef bool ContactCallback(btManifoldPoint &cp, const_btCollisionObjectWrapper *colObjWrap0, int partId0, int index0, const_btCollisionObjectWrapper *colObjWrap1, int partId1, int index1):
+    cdef const btCollisionObject* colObj0 = (colObjWrap0.getCollisionObject())
+    cdef const btCollisionObject* colObj1 = (colObjWrap0.getCollisionObject())
     cdef CollisionObject obj0, obj1
     cdef bool result = True
     duplicate = False

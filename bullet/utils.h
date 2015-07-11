@@ -38,8 +38,11 @@ struct PyBulletCollisionResults : public btCollisionWorld::ConvexResultCallback,
     btVector3 m_ray_from;
     btVector3 m_ray_len;
 
-    virtual btScalar addSingleResult(btManifoldPoint &cp, const btCollisionObject *colObj0, int partId0, int index0, const btCollisionObject *colObj1, int partId1, int index1)
+    virtual btScalar addSingleResult(btManifoldPoint &cp, const btCollisionObjectWrapper *colObjWrap0, int partId0, int index0, const btCollisionObjectWrapper *colObjWrap1, int partId1, int index1)
     {
+
+    const btCollisionObject *colObj0 = colObjWrap0->getCollisionObject();
+    const btCollisionObject *colObj1 = colObjWrap1->getCollisionObject();
         const btVector3 &pos = cp.getPositionWorldOnA();
         int index;
         const btCollisionObject *colObj;
