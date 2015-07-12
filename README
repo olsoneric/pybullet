@@ -5,16 +5,21 @@ unzip 2.83.5.zip
 cd bullet3-2.83.5
 mkdir build
 cd build
-cmake .. -G "Unix Makefiles" -DINSTALL_LIBS=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX:PATH=/usr/local/install
+cmake .. -G "Unix Makefiles" -DINSTALL_LIBS=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX:PATH=/usr/local
 make -j 4
 make install
 cd ../..
 
 cd pybullet
-python setup.py build_ext --include-dirs /usr/local/install/include/bullet --library-dirs /usr/local/install/lib
+python setup.py build_ext --include-dirs /usr/local/include/bullet --library-dirs /usr/local/lib
 
-The only file you need is bullet.so (e.g. build/lib.linux-x86_64-2.7/bullet/bullet.so) which should be copied to
-the game's lib dir.
+The only file you need for python is bullet.so
+(e.g. build/lib.linux-x86_64-2.7/bullet/bullet.so) which can
+be copied to the application's lib dir.
+
+You can also use normal python install commands such as
+"python setup.py install" or if you're using pip,
+"pip install -I .".
 
 
 
