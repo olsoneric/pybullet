@@ -3816,7 +3816,7 @@ cdef class RotationalLimitMotor:
 
 cdef bool ContactCallback(btManifoldPoint &cp, const_btCollisionObjectWrapper *colObjWrap0, int partId0, int index0, const_btCollisionObjectWrapper *colObjWrap1, int partId1, int index1):
     cdef const btCollisionObject* colObj0 = (colObjWrap0.getCollisionObject())
-    cdef const btCollisionObject* colObj1 = (colObjWrap0.getCollisionObject())
+    cdef const btCollisionObject* colObj1 = (colObjWrap1.getCollisionObject())
     cdef CollisionObject obj0, obj1
     cdef bool result = True
     duplicate = False
