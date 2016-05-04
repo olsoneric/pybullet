@@ -3824,10 +3824,10 @@ cdef bool ContactCallback(btManifoldPoint &cp, const_btCollisionObjectWrapper *c
         obj0 = <CollisionObject>(colObj0.getUserPointer())
         obj1 = <CollisionObject>(colObj1.getUserPointer())
         if obj0.contact_callback and obj0.contact_callback_filter_mask & obj1.contact_callback_filter_group:
-            obj0.contact_callback(obj1, duplicate)
+            obj0.contact_callback(obj1, obj0, duplicate)
             duplicate = True
         if obj1.contact_callback and obj1.contact_callback_filter_mask & obj0.contact_callback_filter_group:
-            obj1.contact_callback(obj0, duplicate)
+            obj1.contact_callback(obj0, obj1, duplicate)
     return result
 
 
