@@ -1333,8 +1333,7 @@ cdef class IndexedMesh:
     cdef btIndexedMesh* thisptr
 
     cdef PHY_ScalarType _dtypeToScalarType(self, numpy.ndarray array):
-        cdef char *dname = array.dtype.char
-        cdef char dtype = dname[0]
+        cdef char dtype = ord(array.dtype.char)
 
         if dtype == 'f':
             return PHY_FLOAT
