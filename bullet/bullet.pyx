@@ -1157,7 +1157,18 @@ cdef class Matrix3x3:
         cdef Matrix3x3 m = Matrix3x3()
         m.thisptr[0] = self.thisptr.inverse()
         return m
-                        
+
+    def mul_vec3(self, Vector3 vec not None):
+        """
+        Tranform a vector with a matrix.
+        Returns a new Vector3.
+        """
+        cdef btVector3 bt_vec = vec.to_bt()
+
+        return Vector3(self.thisptr.getRow(0).dot(bt_vec),
+                       self.thisptr.getRow(1).dot(bt_vec),
+                       self.thisptr.getRow(2).dot(bt_vec))
+
 
 
 cdef class CollisionShape:
