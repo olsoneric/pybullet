@@ -105,6 +105,12 @@ cdef extern from "btBulletCollisionCommon.h":
     cdef cppclass btCapsuleShape(btConvexShape):
         btCapsuleShape(btScalar radius, btScalar height)
 
+    cdef cppclass btConvexHullShape:
+        btConvexHullShape()
+        btConvexHullShape(
+            btScalar* points,
+            int numPoints,
+            int stride)
 
     cdef cppclass btBvhTriangleMeshShape(btConvexShape):
         btBvhTriangleMeshShape(
@@ -205,6 +211,8 @@ cdef extern from "btBulletDynamicsCommon.h":
         void *getUserPointer()
         void setUserPointer(void *)
 
+    # cdef btVector3 operator*(const btMatrix3x3*& m, const btVector3& v)
+
     cdef int _CF_NO_CONTACT_RESPONSE "btCollisionObject::CF_NO_CONTACT_RESPONSE"
     cdef int _CF_CUSTOM_MATERIAL_CALLBACK "btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK"
 
@@ -266,6 +274,7 @@ cdef extern from "BulletCollision/CollisionShapes/btCylinderShape.h":
         btCylinderShape(btVector3&)
         btVector3& getHalfExtentsWithoutMargin()
         btScalar getRadius()
+        void setMargin(btScalar margin)
 
     cdef cppclass btCylinderShapeX(btCylinderShape):
         btCylinderShapeX(btVector3&)
@@ -409,6 +418,7 @@ cdef extern from "btBulletCollisionCommon.h":
         # btVector3& operator+=(btScalar&)
         # btVector3& operator*=(btScalar&)
 
+    ctypedef char* const_btVector3 "const btVector3"
 
     cdef cppclass btQuaternion:
         btQuaternion()
@@ -429,7 +439,8 @@ cdef extern from "btBulletCollisionCommon.h":
     cdef cppclass btBroadphaseInterface:
         btOverlappingPairCache* getOverlappingPairCache()
 
-    cdef cppclass btOverlappingPairCache   #LOOK
+    cdef cppclass btOverlappingPairCache:   #LOOK
+        pass
 
     cdef cppclass btAxisSweep3(btBroadphaseInterface):
         btAxisSweep3(btVector3, btVector3, unsigned short int maxHandles,
@@ -460,6 +471,7 @@ cdef extern from "btBulletCollisionCommon.h":
         void setLinearVelocity(btVector3 velocity)
         btVector3& getLinearVelocity()
         btScalar getLinearDamping()
+        void setDamping(btScalar lin_damping, btScalar ang_damping)
         btScalar getLinearSleepingThreshold()
 
         void applyCentralForce(btVector3 force)
@@ -689,10 +701,27 @@ cdef extern from "BulletDynamics/Vehicle/btRaycastVehicle.h":
         btVector3 getForwardVector()
         btScalar getCurrentSpeedKmHour()
 
-        void setCoordinateSystem(int rightIndex, int upIndex, int forwardIndex)    
+        void setCoordinateSystem(int rightIndex, int upIndex, int forwardIndex)
         int getRightAxis()
         int getUpAxis()
         int getForwardAxis()
+
+
+cdef extern from "BulletDynamics/ConstraintSolver/btGeneric6DofSpring2Constraint.h":
+
+    cdef cppclass btGeneric6DofSpring2Constraint(btTypedConstraint):
+        pass
+
+
+cdef extern from "BulletDynamics/ConstraintSolver/btFixedConstraint.h":
+
+    cdef cppclass btFixedConstraint(btGeneric6DofSpring2Constraint):
+
+        btFixedConstraint(
+            btRigidBody& rbA, btRigidBody& rbB, const btTransform& frameInA,
+            const btTransform& frameInB)
+
+        void setParam(int num, btScalar value, int axis)
 
 
 cdef extern from "BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h":
@@ -767,6 +796,38 @@ cdef extern from "BulletDynamics/ConstraintSolver/btGeneric6DofSpringConstraint.
         void    setDamping (int index, btScalar damping)
         void    setEquilibriumPoint ()
         void    setEquilibriumPoint (int index)
+
+
+cdef extern from "BulletDynamics/ConstraintSolver/btHingeConstraint.h":
+
+    cdef cppclass btHingeConstraint(btTypedConstraint):
+
+        btHingeConstraint(
+            btRigidBody &rbA, btRigidBody &rbB, btVector3 &pivotInA,
+            btVector3 &pivotInB, btVector3 &axisInA, btVector3 &axisInB,
+            bool useReferenceFrameA)
+
+        btHingeConstraint(
+            btRigidBody &rbA, btVector3 &pivotInA, btVector3 &axisInA,
+            bool useReferenceFrameA)
+
+        btHingeConstraint(
+            btRigidBody &rbA, btRigidBody &rbB, btTransform &rbAFrame,
+            btTransform &rbBFrame, bool useReferenceFrameA)
+
+        btHingeConstraint(btRigidBody& rbA,const btTransform& rbAFrame,
+                          bool useReferenceFrameA)
+
+        # btVector3 &     getAxis1 ()
+        # btVector3 &     getAxis2 ()
+        # btScalar    getAngle1 ()
+        # btScalar    getAngle2 ()
+        void enableMotor(bool enableMotor)
+        void setLimit (btScalar low, btScalar high, btScalar _softness,
+                       btScalar _biasFactor, btScalar _relaxationFactor)
+        void setMaxMotorImpulse(btScalar maxMotorImpulse)
+        void setMotorTarget(btScalar targetAngle, btScalar dt)
+        void setParam(int num, btScalar value, int axis)
 
 
 cdef extern from "BulletDynamics/ConstraintSolver/btHinge2Constraint.h":
@@ -1281,6 +1342,9 @@ cdef class CylinderShape(ConvexShape):
         cdef btVector3 v = (<btCylinderShape*>self.thisptr).getHalfExtentsWithoutMargin()
         return Vector3(v.getX(), v.getY(), v.getZ())
 
+    def setMargin(self, btScalar margin):
+        (<btCylinderShape*>self.thisptr).setMargin(margin)
+
 
 
 cdef class CylinderShapeX(CylinderShape):
@@ -1344,8 +1408,7 @@ cdef class IndexedMesh:
     cdef btIndexedMesh* thisptr
 
     cdef PHY_ScalarType _dtypeToScalarType(self, numpy.ndarray array):
-        cdef char *dname = array.dtype.char
-        cdef char dtype = dname[0]
+        cdef char dtype = ord(array.dtype.char)
 
         if dtype == 'f':
             return PHY_FLOAT
@@ -1472,6 +1535,37 @@ cdef class TriangleIndexVertexArray(StridingMeshInterface):
         cdef btTriangleIndexVertexArray *array
         array = <btTriangleIndexVertexArray*>self.thisptr
         array.addIndexedMesh(mesh.thisptr[0], mesh.thisptr.m_indexType)
+
+
+cdef class ConvexHullShape:
+    """
+    A ConvexHullShape is a shape defined by an array of triangle vertex
+    data.
+
+    This class is a wrapper around btConvexHullShape.
+    btConvexHullShape will make a copy of the points.
+    """
+    cdef btConvexHullShape *thisptr
+
+    def __init__(self, numpy.ndarray points, int numPoints=0,
+                 int stride=sizeof(btVector3)):
+
+        if len(points) < 1:
+            self.thisptr = new btConvexHullShape()
+            return
+
+        cdef char dtype = ord(points.dtype.char)
+        if dtype != 'f':
+            raise ValueError("Expected array of float type")
+
+        if sizeof(btScalar) != sizeof(float):
+            raise Exception("Ensure size different than float is handled.")
+
+        self.thisptr = new btConvexHullShape(<btScalar*>points.data,
+                                             numPoints, stride=stride)
+
+    def __dealloc__(self):
+        del self.thisptr
 
 
 
@@ -1882,12 +1976,12 @@ cdef class RigidBody(CollisionObject):
         # explicitly list the shapes which cannot have their local inertia
         # calculated.
         if mass != 0.0:
-            shape.thisptr.calculateLocalInertia(mass, inertia)
+            # shape.thisptr.calculateLocalInertia(mass, inertia)
 
-        if localInertia is None:
-            shape.thisptr.calculateLocalInertia(mass, inertia)
-        else:
-            inertia = btVector3(localInertia.x, localInertia.y, localInertia.z)
+            if localInertia is None:
+                shape.thisptr.calculateLocalInertia(mass, inertia)
+            else:
+                inertia = btVector3(localInertia.x, localInertia.y, localInertia.z)
 
         cdef btRigidBodyConstructionInfo* info
         info = new btRigidBodyConstructionInfo(
@@ -2042,6 +2136,13 @@ cdef class RigidBody(CollisionObject):
         """
         cdef btRigidBody* body = <btRigidBody*>self.thisptr
         return body.getLinearDamping()
+
+
+    def setDamping(self, btScalar lin_damping, btScalar ang_damping):
+        """Specify the linear damping for this object."""
+
+        cdef btRigidBody* body = <btRigidBody*>self.thisptr
+        body.setDamping(lin_damping, ang_damping)
 
 
     def getLinearSleepingThreshold(self):
@@ -3559,6 +3660,42 @@ cdef class Generic6DofConstraint(TypedConstraint):
         return (<btGeneric6DofConstraint*>self.thisptr).getParam(num, axis)
 
 
+cdef class FixedConstraint(Generic6DofSpringConstraint):
+    """
+    The hinge-2 constraint has its origins in ODE, and can be used to effectively
+    the constraint between a car body and its wheels. It models a springy suspension
+    and 2 axes of rotational freedom.
+
+    In terms of a vehicle simulation, the first axis re-points the wheel (i.e.
+    steers the wheel, e.g. the Y axis). The second axis is the drive axis (i.e.
+    moves the wheel forward or backward on its current path).
+    """
+
+    def __init__(self, RigidBody a not None, RigidBody b not None,
+                 Transform aFrame not None, Transform bFrame not None):
+
+        _a_frame = new btTransform()
+        _a_frame.setOrigin(aFrame.thisptr.getOrigin())
+        _a_frame.setRotation(aFrame.thisptr.getRotation())
+
+        _b_frame = new btTransform()
+        _b_frame.setOrigin(bFrame.thisptr.getOrigin())
+        _b_frame.setRotation(bFrame.thisptr.getRotation())
+
+        self.thisptr = new btFixedConstraint(
+            (<btRigidBody*>a.thisptr)[0], (<btRigidBody*>b.thisptr)[0],
+            _a_frame[0], _b_frame[0])
+
+        del _a_frame
+        del _b_frame
+
+    def setParam(self, int num, btScalar value, int axis=-1):
+        """
+        Overrides the default global value of a parameter (such as ERP or CFM).
+        If axis is not specified, sets the parameter on all axes.
+        """
+        (<btFixedConstraint*>self.thisptr).setParam(num, value, axis)
+
 
 cdef class Generic6DofSpringConstraint(Generic6DofConstraint):
     """
@@ -3598,6 +3735,93 @@ cdef class Generic6DofSpringConstraint(Generic6DofConstraint):
             (<btGeneric6DofSpringConstraint*>self.thisptr).setEquilibriumPoint()
         else:
             (<btGeneric6DofSpringConstraint*>self.thisptr).setEquilibriumPoint(index)
+
+
+cdef class HingeConstraint(TypedConstraint):
+    def __init__(self, RigidBody a, RigidBody b=None, Vector3 pivotInA=None,
+                 Vector3 pivotInB=None, Vector3 axisInA=None,
+                 Vector3 axisInB=None, Transform aFrame=None,
+                 Transform bFrame=None, bool useReferenceFrameA=False):
+
+        cdef btVector3 *_pivot_in_a = NULL
+        cdef btVector3 *_pivot_in_b = NULL
+        cdef btVector3 *_axis_in_a = NULL
+        cdef btVector3 *_axis_in_b = NULL
+        cdef btTransform *_a_frame = NULL
+        cdef btTransform *_b_frame = NULL
+
+        if pivotInA:
+            _pivot_in_a = new btVector3(pivotInA.x, pivotInA.y, pivotInA.z)
+        if pivotInB:
+            _pivot_in_b = new btVector3(pivotInB.x, pivotInB.y, pivotInB.z)
+        if axisInA:
+            _axis_in_a = new btVector3(axisInA.x, axisInA.y, axisInA.z)
+        if axisInB:
+            _axis_in_b = new btVector3(axisInB.x, axisInB.y, axisInB.z)
+        if aFrame:
+            _a_frame = new btTransform()
+            _a_frame.setOrigin(aFrame.thisptr.getOrigin())
+            _a_frame.setRotation(aFrame.thisptr.getRotation())
+        if bFrame:
+            _b_frame = new btTransform()
+            _b_frame.setOrigin(bFrame.thisptr.getOrigin())
+            _b_frame.setRotation(bFrame.thisptr.getRotation())
+
+        if not a:
+            raise Exception("RigidBody arg required")
+
+        if b:
+            if pivotInA and pivotInB and axisInA and axisInB:
+                self.thisptr = new btHingeConstraint(
+                    (<btRigidBody*>a.thisptr)[0], (<btRigidBody*>b.thisptr)[0],
+                    _pivot_in_a[0], _pivot_in_b[0], _axis_in_a[0],
+                    _axis_in_b[0], useReferenceFrameA)
+            elif aFrame and bFrame:
+                self.thisptr = new btHingeConstraint(
+                    (<btRigidBody*>a.thisptr)[0], (<btRigidBody*>b.thisptr)[0],
+                    _a_frame[0], _b_frame[0], useReferenceFrameA)
+        elif pivotInA and axisInA:
+                self.thisptr = new btHingeConstraint(
+                    (<btRigidBody*>a.thisptr)[0], _pivot_in_a[0], _axis_in_a[0],
+                    useReferenceFrameA)
+        elif aFrame:
+            self.thisptr = new btHingeConstraint(
+                (<btRigidBody*>a.thisptr)[0], _a_frame[0], useReferenceFrameA)
+
+        if not self.thisptr:
+            raise Exception("HingeConstraint args don't match constructors.")
+
+        if _pivot_in_a:
+            del _pivot_in_a
+        if _pivot_in_b:
+            del _pivot_in_b
+        if _axis_in_a:
+            del _axis_in_a
+        if _axis_in_b:
+            del _axis_in_b
+        if _a_frame:
+            del _a_frame
+        if _b_frame:
+            del _b_frame
+
+    def enableMotor(self, bool enableMotor):
+        (<btHingeConstraint*>self.thisptr).enableMotor(enableMotor)
+
+    def setLimit(self, btScalar low, btScalar high, btScalar _softness=0.9,
+                 btScalar _biasFactor=0.3, btScalar _relaxationFactor=1.0):
+        (<btHingeConstraint*>self.thisptr).setLimit(low, high, _softness,
+                                                    _biasFactor,
+                                                    _relaxationFactor)
+
+    def setMaxMotorImpulse(self, btScalar maxMotorImpulse):
+        (<btHingeConstraint*>self.thisptr).setMaxMotorImpulse(maxMotorImpulse)
+
+    def setMotorTarget(self, btScalar targetAngle, btScalar dt):
+        (<btHingeConstraint*>self.thisptr).setMotorTarget(targetAngle, dt)
+
+    def setParam(self, int num, btScalar value, int axis=-1):
+        (<btHingeConstraint*>self.thisptr).setParam(num, value, axis)
+
 
 cdef class Hinge2Constraint(Generic6DofSpringConstraint):
     """
@@ -3835,10 +4059,10 @@ cdef bool ContactCallback(btManifoldPoint &cp, const_btCollisionObjectWrapper *c
         obj0 = <CollisionObject>(colObj0.getUserPointer())
         obj1 = <CollisionObject>(colObj1.getUserPointer())
         if obj0.contact_callback and obj0.contact_callback_filter_mask & obj1.contact_callback_filter_group:
-            obj0.contact_callback(obj1, duplicate)
+            obj0.contact_callback(obj1, obj0, duplicate)
             duplicate = True
         if obj1.contact_callback and obj1.contact_callback_filter_mask & obj0.contact_callback_filter_group:
-            obj1.contact_callback(obj0, duplicate)
+            obj1.contact_callback(obj0, obj1, duplicate)
     return result
 
 
