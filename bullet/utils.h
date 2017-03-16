@@ -123,7 +123,7 @@ struct PyBulletCollisionResults : public btCollisionWorld::ConvexResultCallback,
     }
 };
 
-void pybullet_contact(btCollisionWorld *world, btConvexShape *shape, btTransform trans, PyBulletCollisionResults *results)
+void pybullet_contact(btCollisionWorld *world, btConvexShape *shape, const btTransform &trans, PyBulletCollisionResults *results)
 {
     // Clear previous results
     results->m_collisions.clear();
@@ -142,7 +142,7 @@ bool pybullet_contact_pair(btCollisionWorld *world, btCollisionObject *a, btColl
     return results.m_collisions.size();
 }
 
-void pybullet_sweep(btCollisionWorld *world, btConvexShape *shape, btTransform trans_from, btTransform trans_to, PyBulletCollisionResults *results)
+void pybullet_sweep(btCollisionWorld *world, btConvexShape *shape, const btTransform &trans_from, const btTransform &trans_to, PyBulletCollisionResults *results)
 {
     // Clear previous results
     results->m_collisions.clear();
@@ -159,7 +159,7 @@ void pybullet_sweep(btCollisionWorld *world, btConvexShape *shape, btTransform t
     world->convexSweepTest(shape, trans_from, trans_to, *results, 0.f);
 }
 
-void pybullet_ray(btCollisionWorld *world, btVector3 from, btVector3 to, PyBulletCollisionResults *results)
+void pybullet_ray(btCollisionWorld *world, const btVector3 &from, const btVector3 &to, PyBulletCollisionResults *results)
 {
     // Clear previous results
     results->m_collisions.clear();
