@@ -17,12 +17,12 @@ def measure(n, params):
     type, args = params[0], params[1:]
     type(*args)
     before = memused()
-    print type.__name__, before,
+    print(type.__name__, before,)
     sys.stdout.flush()
     for i in n:
         type(*args)
     after = memused()
-    print after, after - before
+    print(after, after - before)
 
 
 
